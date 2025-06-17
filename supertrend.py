@@ -1,5 +1,6 @@
-import pandas as pd
 import numpy as np
+np.NaN = np.nan  # Monkey patch NaN for compatibility with pandas_ta
+import pandas as pd
 import pandas_ta as ta
 
 def calculate_supertrend(df, period=10, multiplier=2):
