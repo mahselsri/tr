@@ -5,3 +5,4 @@ streamlit
 plotly
 mplfinance
 pandas_ta
+setuptools>=65.0.0
