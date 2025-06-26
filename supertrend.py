@@ -3,7 +3,41 @@ np.NaN = np.nan  # Monkey patch NaN for compatibility with pandas_ta
 import pandas as pd
 import pandas_ta as ta
 
-def calculate_supertrend(df, period=10, multiplier=2):
+def calculate_supertrend(df, base_period=10, multiplier=2):
+    df = df.copy()
+
+    required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+    df = df[required_columns].apply(pd.to_numeric, errors='coerce').dropna()
+    if df.empty:
+        df['InUptrend'] = np.nan
+        return df
+
+    num_candles = len(df)
+
+    if num_candles < 3:
+        df['InUptrend'] = np.nan
+        return df
+
+    adjusted_period = min(base_period, max(3, int(num_candles / 2)))
+
+    try:
+        df.ta.supertrend(period=adjusted_period, multiplier=multiplier, append=True)
+    except Exception as e:
+        print(f"⚠️ Supertrend failed: {e}")
+        df['InUptrend'] = np.nan
+        return df
+
+    supertrend_col = [col for col in df.columns if 'SUPERT_' in col]
+    if not supertrend_col:
+        df['InUptrend'] = np.nan
+        return df
+
+    df['Supertrend'] = df[supertrend_col[0]]
+    df['InUptrend'] = df['Close'] > df['Supertrend']
+
+    return df
+    
+def calculate_supertrend1(df, period=10, multiplier=2):
     """
     Calculates Supertrend and trend direction.
     
