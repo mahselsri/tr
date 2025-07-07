@@ -1,7 +1,7 @@
 from zerodha_api import get_ohlc_data
 
 
-def fetch_nifty_50_stocks():
+def fetch_nifty_50_stocks2():
     return [
         "RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR",
         "SBIN", "ICICIBANK", "KOTAKBANK", "AXISBANK", "LT",
@@ -14,10 +14,16 @@ def fetch_nifty_50_stocks():
         "EICHERMOT", "HDFCLIFE", "ICICIGI", "SBILIFE", "PIDILITIND",
         "M&M", "COALINDIA", "TATAPOWER", "TVSMOTOR", "ACC"
     ]
-
+def fetch_nifty_20_stocks():
+    return [
+        "RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR",
+        "SBIN", "ICICIBANK", "KOTAKBANK", "AXISBANK", "LT",
+        "BAJFINANCE", "ITC", "ASIANPAINT", "MARUTI", "SUNPHARMA",
+        "TATASTEEL", "NESTLEIND", "POWERGRID", "ONGC", "WIPRO"
+    ]
 def fetch_nifty_50_stocks1():
     return [
-        "RELIANCE", "TCS","HDFCBANK", "INFY", "HINDUNILVR"
+        "RELIANCE", "TCS","HDFCBANK"
         
     ]
 

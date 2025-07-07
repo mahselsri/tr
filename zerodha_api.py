@@ -1,15 +1,50 @@
 from kiteconnect import KiteConnect
 import pandas as pd
 import os
+import time
 # --- Step 1: Paste Your API Key & Secret Here ---
 API_KEY = "f1t0xfioknkg0v64"
 API_SECRET = "2y0071w25pm3mj49pxvzqdtnk3g4ocvg"
 SESSION_FILE = "zerodha_session.txt"
 
 
+TIMEFRAME_MAP1 = {
+    "5M": "5minute"
+}
+TIMEFRAME_MAP = {
+    "5M": "5minute",
+    "10M": "10minute",
+    "15M": "15minute",
+    "30M": "30minute",
+    "60M": "60minute"
+}
+def analyze_timeframe(kite, symbol):
+    """
+    Returns price + volume info for all timeframes
+    """
+    timeframe_data = {}
 
+    for tf_key, tf_val in TIMEFRAME_MAP.items():
+        df = get_ohlc_data(kite, symbol, interval=tf_val, days_back=1)
 
-def get_intraday_data(kite, symbol):
+        if df is None or len(df) < 2:
+            timeframe_data[tf_key] = {'price': '-', 'volume': '-', 'vol_spike': '-'}
+            continue
+
+        latest = df.iloc[-1]
+        prev_volumes = df['Volume'].tail(5).mean()
+        vol_spike = round((latest['Volume'] / prev_volumes - 1) * 100, 2) if prev_volumes > 0 else 0
+
+        timeframe_data[tf_key] = {
+            'price': round(latest['Close'], 2),
+            'volume': latest['Volume'],
+            'vol_spike': f"{vol_spike}%"
+        }
+        #delay between calls
+        time.sleep(1.5) 
+    return timeframe_data
+
+def get_intraday_data1(kite, symbol):
     print(f"inside intra day")
     df = get_ohlc_data(kite, symbol)
     print(f"after intra day")
@@ -18,6 +53,40 @@ def get_intraday_data(kite, symbol):
         return df
     else:
         return None
+
+def get_intraday_data(kite, symbol):
+    # Get trend across timeframes
+    timeframe_trends = analyze_timeframe(kite, symbol)
+
+    # Use 5M as primary
+    primary_tf = "5M"
+    primary_trend = timeframe_trends.get(primary_tf)
+
+    if primary_trend is None:
+        return None
+
+    # Generate main signal based on 5M
+    signal = None
+    if timeframe_trends["5M"] and not timeframe_trends["15M"]:
+        signal = "🟢 Buy Call (Mixed)"
+    elif timeframe_trends["5M"] and timeframe_trends["15M"] and timeframe_trends["60M"]:
+        signal = "✅ Buy Call (Strong)"
+    elif not timeframe_trends["5M"] and timeframe_trends["60M"]:
+        signal = "🔴 Buy Put (Reversal)"
+    elif not timeframe_trends["5M"]:
+        signal = "🛑 Sell Put (Weak)"
+    else:
+        signal = "⚠️ Mixed Signal"
+
+    return {
+        'Symbol': symbol,
+        'Signal': signal,
+        '5M': timeframe_trends.get("5M"),
+        '10M': timeframe_trends.get("10M"),
+        '15M': timeframe_trends.get("15M"),
+        '30M': timeframe_trends.get("30M"),
+        '60M': timeframe_trends.get("60M")
+    }, timeframe_trends
 
 def get_live_quote_data(kite, symbol):
     """
