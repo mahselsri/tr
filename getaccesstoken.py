@@ -2,8 +2,13 @@ import os
 from kiteconnect import KiteConnect
 import streamlit as st
 SESSION_FILE = "zerodha_app_session.txt"
-API_KEY = "f1t0xfioknkg0v64"
-API_SECRET = "2y0071w25pm3mj49pxvzqdtnk3g4ocvg"
+import streamlit as st
+try:
+    API_KEY = st.secrets["API_KEY"]
+    API_SECRET = st.secrets["API_SECRET"]
+except KeyError:
+    API_KEY = os.environ.get("API_KEY", "default_or_raise_error")
+    API_SECRET = os.environ.get("API_SECRET", "default_or_raise_error")
 
 def load_access_token():
     """Load access token from file"""

@@ -3,29 +3,33 @@ import pandas as pd
 import os
 import time
 # --- Step 1: Paste Your API Key & Secret Here ---
-API_KEY = "f1t0xfioknkg0v64"
-API_SECRET = "2y0071w25pm3mj49pxvzqdtnk3g4ocvg"
+
 SESSION_FILE = "zerodha_session.txt"
 
 
 TIMEFRAME_MAP1 = {
-    "5M": "5minute"
-}
-TIMEFRAME_MAP = {
     "5M": "5minute",
     "10M": "10minute",
     "15M": "15minute",
     "30M": "30minute",
     "60M": "60minute"
 }
+TIMEFRAME_MAP = {
+    "5M": "5minute",
+    "10M": "10minute",
+    "15M": "15minute"
+    
+}
 def analyze_timeframe(kite, symbol):
     """
     Returns price + volume info for all timeframes
     """
     timeframe_data = {}
-
+    # Fetch instruments once
+    instruments_eq = kite.instruments("NSE")
+    instruments_fo = kite.instruments("NSE_FO")
     for tf_key, tf_val in TIMEFRAME_MAP.items():
-        df = get_ohlc_data(kite, symbol, interval=tf_val, days_back=1)
+        df = get_ohlc_data(kite, symbol,instruments_eq, instruments_fo, interval=tf_val, days_back=1)
 
         if df is None or len(df) < 2:
             timeframe_data[tf_key] = {'price': '-', 'volume': '-', 'vol_spike': '-'}
@@ -41,18 +45,8 @@ def analyze_timeframe(kite, symbol):
             'vol_spike': f"{vol_spike}%"
         }
         #delay between calls
-        time.sleep(1.5) 
+        #time.sleep(1.5) 
     return timeframe_data
-
-def get_intraday_data1(kite, symbol):
-    print(f"inside intra day")
-    df = get_ohlc_data(kite, symbol)
-    print(f"after intra day")
-    if df is not None and not df.empty:
-        df.index = df.index.tz_localize(None)  # Remove timezone info
-        return df
-    else:
-        return None
 
 def get_intraday_data(kite, symbol):
     # Get trend across timeframes
@@ -69,10 +63,8 @@ def get_intraday_data(kite, symbol):
     signal = None
     if timeframe_trends["5M"] and not timeframe_trends["15M"]:
         signal = "🟢 Buy Call (Mixed)"
-    elif timeframe_trends["5M"] and timeframe_trends["15M"] and timeframe_trends["60M"]:
+    elif timeframe_trends["5M"] and timeframe_trends["10M"] and timeframe_trends["15M"]:
         signal = "✅ Buy Call (Strong)"
-    elif not timeframe_trends["5M"] and timeframe_trends["60M"]:
-        signal = "🔴 Buy Put (Reversal)"
     elif not timeframe_trends["5M"]:
         signal = "🛑 Sell Put (Weak)"
     else:
@@ -83,9 +75,7 @@ def get_intraday_data(kite, symbol):
         'Signal': signal,
         '5M': timeframe_trends.get("5M"),
         '10M': timeframe_trends.get("10M"),
-        '15M': timeframe_trends.get("15M"),
-        '30M': timeframe_trends.get("30M"),
-        '60M': timeframe_trends.get("60M")
+        '15M': timeframe_trends.get("15M")
     }, timeframe_trends
 
 def get_live_quote_data(kite, symbol):
@@ -183,7 +173,7 @@ def get_live_quote_data33(kite, symbol):
         print(f"❌ Error fetching live data for {symbol}: {e}")
         return None
         
-def get_ohlc_data(kite, symbol, interval="5minute", days_back=7):
+def get_ohlc_data(kite, symbol,instruments_eq, instruments_fo, interval, days_back=1):
     """
     Fetches historical OHLC data for given stock from Zerodha API.
     Tries NSE_EQ (cash) first, then NSE_FO (futures & options).
@@ -191,14 +181,14 @@ def get_ohlc_data(kite, symbol, interval="5minute", days_back=7):
     try:
         print(f"inside get ohlc day")
         # Try segment NSE_EQ (Cash Market)
-        instruments_eq = kite.instruments("NSE")
+        #instruments_eq = kite.instruments("NSE")
         #print(f"after get ohlc day{instruments_eq}")
         inst = next((item for item in instruments_eq if item['tradingsymbol'] == symbol), None)
         print(f" NSE Found")
         if not inst:
             # Fallback to NSE_FO (F&O Segment)
             print(f"NO NSE")
-            instruments_fo = kite.instruments("NSE_FO")
+            #instruments_fo = kite.instruments("NSE_FO")
             print(f"after NSE_fo{instruments_fo}")
             inst = next((item for item in instruments_fo if item['underlying_symbol'] == symbol or item['tradingsymbol'] == symbol), None)
 
@@ -211,7 +201,7 @@ def get_ohlc_data(kite, symbol, interval="5minute", days_back=7):
         from_date = (pd.Timestamp.today() - pd.Timedelta(days=days_back)).strftime("%Y-%m-%d")
         to_date = pd.Timestamp.today().strftime("%Y-%m-%d")
 
-        data = kite.historical_data(instrument_token, from_date, to_date, interval=interval)
+        data = kite.historical_data(instrument_token, to_date, to_date, interval=interval)
         print(f"history data")
         if not data:
             print(f"❌ No historical data returned for {symbol}")

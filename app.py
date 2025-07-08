@@ -9,8 +9,14 @@ from zerodha_api import TIMEFRAME_MAP
 st.set_page_config(layout="wide")
 st.title("📈 Live Nifty 50 (Top 10) Volume & Trend Screener")
 # Initialize kite object
+import streamlit as st
 
-
+try:
+    API_KEY = st.secrets["API_KEY"]
+    API_SECRET = st.secrets["API_SECRET"]
+except KeyError:
+    API_KEY = os.environ.get("API_KEY", "default_or_raise_error")
+    API_SECRET = os.environ.get("API_SECRET", "default_or_raise_error")
 def get_color_for_spike(val):
     """
     Returns background color based on volume spike percentage
@@ -63,9 +69,9 @@ if kite is None:
     request_token = st.text_input("Enter request_token from URL after login:")
     if st.button("Generate Session"):
         if request_token.strip():
-            kite = KiteConnect(api_key="f1t0xfioknkg0v64")
+            kite = KiteConnect(api_key=API_KEY)
             try:
-                session_data = kite.generate_session(request_token, api_secret="2y0071w25pm3mj49pxvzqdtnk3g4ocvg")
+                session_data = kite.generate_session(request_token, api_secret=API_SECRET)
                 access_token = session_data["access_token"]
                 save_access_token(access_token)
                 kite.set_access_token(access_token)
